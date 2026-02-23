@@ -1,15 +1,20 @@
 """FastAPI application: REST + SSE endpoints."""
 
+import os
+import secrets
 import uuid
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI, Request
+from fastapi import Depends, FastAPI, HTTPException, Request, status
 from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
+from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from fastapi.staticfiles import StaticFiles
 
-from .database import init_db
+from .database import cancel_appointment, get_all_appointments, init_db
 from .agent import ReceptionistAgent
+
+_basic = HTTPBasic()
 
 # Shared agent instance (manages session state in memory)
 agent = ReceptionistAgent()
@@ -26,6 +31,23 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="Dental AI Receptionist", lifespan=lifespan)
 
 app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
+
+
+# ---------------------------------------------------------------------------
+# Auth helper
+# ---------------------------------------------------------------------------
+
+def _verify_admin(credentials: HTTPBasicCredentials = Depends(_basic)):
+    """Validate HTTP Basic credentials against ADMIN_PASSWORD env var."""
+    admin_password = os.getenv("ADMIN_PASSWORD", "admin123")
+    ok = secrets.compare_digest(credentials.username.encode(), b"admin") and \
+         secrets.compare_digest(credentials.password.encode(), admin_password.encode())
+    if not ok:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid credentials",
+            headers={"WWW-Authenticate": "Basic"},
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -69,3 +91,42 @@ async def chat(request: Request):
             "X-Accel-Buffering": "no",
         },
     )
+
+
+# ---------------------------------------------------------------------------
+# Admin routes
+# ---------------------------------------------------------------------------
+
+@app.get("/admin", response_class=HTMLResponse)
+async def admin_page():
+    return HTMLResponse((STATIC_DIR / "admin.html").read_text(encoding="utf-8"))
+
+
+@app.get("/api/appointments")
+async def api_appointments(
+    date: str | None = None,
+    status_filter: str | None = None,
+    search: str | None = None,
+    _: None = Depends(_verify_admin),
+):
+    """Return all appointments as JSON. Supports ?date=, ?status_filter=, ?search= query params."""
+    rows = await get_all_appointments(
+        date_filter=date,
+        status_filter=status_filter,
+        search=search,
+    )
+    return JSONResponse(rows)
+
+
+@app.post("/api/appointments/{appointment_id}/cancel")
+async def api_cancel_appointment(
+    appointment_id: int,
+    request: Request,
+    _: None = Depends(_verify_admin),
+):
+    body = await request.json()
+    reason = body.get("reason", "Cancelled by staff")
+    cancelled = await cancel_appointment(appointment_id, reason)
+    if not cancelled:
+        raise HTTPException(status_code=404, detail="Appointment not found or already cancelled")
+    return JSONResponse({"ok": True})

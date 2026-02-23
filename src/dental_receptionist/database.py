@@ -146,3 +146,39 @@ async def get_patient_appointments(patient_name: str, patient_phone: str) -> lis
         ) as cur:
             rows = await cur.fetchall()
     return [dict(r) for r in rows]
+
+
+async def get_all_appointments(
+    date_filter: str | None = None,
+    status_filter: str | None = None,
+    search: str | None = None,
+) -> list[dict]:
+    """Return all appointments, optionally filtered by date, status, or patient name."""
+    query = """
+        SELECT a.id, p.name AS patient_name, p.phone, p.email,
+               a.service, a.date, a.time, a.status, a.created_at
+        FROM appointments a
+        JOIN patients p ON a.patient_id = p.id
+    """
+    conditions: list[str] = []
+    params: list = []
+
+    if date_filter:
+        conditions.append("a.date = ?")
+        params.append(date_filter)
+    if status_filter:
+        conditions.append("a.status = ?")
+        params.append(status_filter)
+    if search:
+        conditions.append("p.name LIKE ?")
+        params.append(f"%{search}%")
+
+    if conditions:
+        query += " WHERE " + " AND ".join(conditions)
+    query += " ORDER BY a.date DESC, a.time ASC"
+
+    async with aiosqlite.connect(DB_PATH) as db:
+        db.row_factory = aiosqlite.Row
+        async with db.execute(query, params) as cur:
+            rows = await cur.fetchall()
+    return [dict(r) for r in rows]

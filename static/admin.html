@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Dashboard — Bright Smile Dental</title>
+  <link rel="stylesheet" href="/static/admin.css" />
+</head>
+<body>
+
+  <!-- ── Login overlay ─────────────────────────────────── -->
+  <div class="login-overlay" id="loginOverlay">
+    <div class="login-card">
+      <div class="login-icon">🦷</div>
+      <h2>Staff Login</h2>
+      <p class="login-sub">Bright Smile Dental — Appointments Dashboard</p>
+      <form id="loginForm" autocomplete="off">
+        <div class="field">
+          <label for="loginUser">Username</label>
+          <input id="loginUser" type="text" value="admin" required />
+        </div>
+        <div class="field">
+          <label for="loginPass">Password</label>
+          <input id="loginPass" type="password" placeholder="Enter password" required autofocus />
+        </div>
+        <div class="login-error" id="loginError" hidden></div>
+        <button type="submit" class="btn btn-primary btn-full">Sign In</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ── Main dashboard ────────────────────────────────── -->
+  <div class="dashboard" id="dashboard" hidden>
+
+    <header class="dash-header">
+      <div class="dash-title">
+        <span class="header-icon">🦷</span>
+        <div>
+          <h1>Bright Smile Dental</h1>
+          <span class="header-sub">Appointments Dashboard</span>
+        </div>
+      </div>
+      <div class="dash-actions">
+        <button id="refreshBtn" class="btn btn-ghost">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+          Refresh
+        </button>
+        <a href="/" class="btn btn-ghost">Chat UI</a>
+        <button id="logoutBtn" class="btn btn-ghost">Logout</button>
+      </div>
+    </header>
+
+    <!-- Stats row -->
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="stat-value" id="statToday">—</div>
+        <div class="stat-label">Today</div>
+      </div>
+      <div class="stat-card stat-confirmed">
+        <div class="stat-value" id="statConfirmed">—</div>
+        <div class="stat-label">Confirmed</div>
+      </div>
+      <div class="stat-card stat-cancelled">
+        <div class="stat-value" id="statCancelled">—</div>
+        <div class="stat-label">Cancelled</div>
+      </div>
+      <div class="stat-card stat-total">
+        <div class="stat-value" id="statTotal">—</div>
+        <div class="stat-label">All Time</div>
+      </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="filter-bar">
+      <input type="date" id="filterDate" title="Filter by date" />
+      <select id="filterStatus">
+        <option value="">All Statuses</option>
+        <option value="confirmed">Confirmed</option>
+        <option value="cancelled">Cancelled</option>
+      </select>
+      <input type="text" id="filterSearch" placeholder="Search patient name…" />
+      <button id="clearFilters" class="btn btn-ghost btn-sm">Clear filters</button>
+    </div>
+
+    <!-- Table -->
+    <div class="table-wrap">
+      <table class="apt-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Patient</th>
+            <th>Phone</th>
+            <th>Service</th>
+            <th>Date</th>
+            <th>Time</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="aptTableBody">
+          <tr><td colspan="8" class="empty-row">Loading…</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <footer class="dash-footer">
+      Auto-refreshes every 60 s &middot; <span id="lastRefresh"></span>
+    </footer>
+  </div>
+
+  <!-- ── Cancel dialog ──────────────────────────────────── -->
+  <div class="modal-backdrop" id="cancelBackdrop" hidden>
+    <div class="modal-card">
+      <h3>Cancel Appointment</h3>
+      <p id="cancelDesc"></p>
+      <div class="field">
+        <label for="cancelReason">Reason (optional)</label>
+        <input id="cancelReason" type="text" placeholder="e.g. Patient request" />
+      </div>
+      <div class="modal-actions">
+        <button id="cancelConfirmBtn" class="btn btn-danger">Yes, cancel it</button>
+        <button id="cancelAbortBtn"   class="btn btn-ghost">Go back</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/admin.js"></script>
+</body>
+</html>
