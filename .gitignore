@@ -8,3 +8,12 @@ wheels/
 
 # Virtual environments
 .venv
+
+# Secrets and local config
+.env
+
+# Database
+*.db
+
+# uv lock (optional — commit if you want reproducible installs)
+# uv.lock

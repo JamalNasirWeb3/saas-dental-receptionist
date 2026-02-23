@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bright Smile Dental — Virtual Receptionist</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <div class="chat-wrapper">
+
+    <!-- Header -->
+    <header class="chat-header">
+      <div class="header-icon">🦷</div>
+      <div class="header-text">
+        <h1>Bright Smile Dental</h1>
+        <span class="status-dot"></span>
+        <span class="status-label">Virtual Receptionist · Online</span>
+      </div>
+    </header>
+
+    <!-- Message list -->
+    <main class="chat-messages" id="chatMessages">
+      <!-- Welcome bubble injected by JS -->
+    </main>
+
+    <!-- Tool activity bar -->
+    <div class="tool-bar" id="toolBar" hidden>
+      <span class="spinner" aria-hidden="true"></span>
+      <span id="toolBarText">Processing…</span>
+    </div>
+
+    <!-- Input area -->
+    <footer class="chat-footer">
+      <textarea
+        id="messageInput"
+        placeholder="Type your message… (Enter to send, Shift+Enter for new line)"
+        rows="1"
+        autocomplete="off"
+        spellcheck="true"
+      ></textarea>
+      <button id="sendBtn" title="Send message" aria-label="Send">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+             stroke-linecap="round" stroke-linejoin="round">
+          <line x1="22" y1="2" x2="11" y2="13"/>
+          <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+        </svg>
+      </button>
+    </footer>
+
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
