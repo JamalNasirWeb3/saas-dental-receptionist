@@ -48,21 +48,30 @@ async function handleLogin(e) {
 
   saveCredentials(user, pass);
 
-  const res = await fetch("/api/appointments", { headers: getAuthHeader() });
-  if (res.status === 401) {
-    clearCredentials();
-    errEl.textContent = "Invalid username or password.";
-    errEl.hidden = false;
-    return;
-  }
+  try {
+    const res = await fetch("/api/appointments", { headers: getAuthHeader() });
+    if (res.status === 401) {
+      clearCredentials();
+      errEl.textContent = "Invalid username or password.";
+      errEl.hidden = false;
+      return;
+    }
+    if (!res.ok) {
+      throw new Error(`Server error: ${res.status}`);
+    }
 
-  errEl.hidden = true;
-  showDashboard();
-  const data = await res.json();
-  allAppointments = data;
-  updateStats();
-  renderTable();
-  startAutoRefresh();
+    errEl.hidden = true;
+    const data = await res.json();
+    allAppointments = data;
+    showDashboard();
+    updateStats();
+    renderTable();
+    startAutoRefresh();
+  } catch (err) {
+    clearCredentials();
+    errEl.textContent = "Login failed: " + err.message;
+    errEl.hidden = false;
+  }
 }
 
 function handleLogout() {
