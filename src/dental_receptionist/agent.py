@@ -43,6 +43,8 @@ Important guidelines:
    for life-threatening situations.
 8. If you cannot help with something, politely explain and suggest calling during business hours.
 9. Keep responses concise and easy to read — use bullet points when listing options.
+10. Respond in a natural, conversational tone suitable for voice interaction.
+11. Keep each response concise (2-3 sentences max per turn when possible).
 """
 
 SESSION_EXPIRY = 7200  # 2 hours in seconds

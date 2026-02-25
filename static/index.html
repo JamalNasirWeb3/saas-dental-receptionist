@@ -17,6 +17,14 @@
         <span class="status-dot"></span>
         <span class="status-label">Virtual Receptionist · Online</span>
       </div>
+      <div class="header-controls">
+        <button id="muteBtn" aria-label="Mute voice output" title="Mute/Unmute voice">
+          <!-- icon set by JS -->
+        </button>
+        <select id="langSelect" aria-label="Language">
+          <option value="en">English</option>
+        </select>
+      </div>
     </header>
 
     <!-- Message list -->
@@ -30,6 +38,12 @@
       <span id="toolBarText">Processing…</span>
     </div>
 
+    <!-- Voice status bar -->
+    <div id="voiceBar" class="voice-bar hidden">
+      <span class="pulse-dot"></span>
+      <span id="voiceBarText">Listening…</span>
+    </div>
+
     <!-- Input area -->
     <footer class="chat-footer">
       <textarea
@@ -39,6 +53,15 @@
         autocomplete="off"
         spellcheck="true"
       ></textarea>
+      <button id="micBtn" aria-label="Voice input" title="Voice input">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+             stroke-linecap="round" stroke-linejoin="round" width="18" height="18">
+          <rect x="9" y="2" width="6" height="11" rx="3"/>
+          <path d="M19 10a7 7 0 0 1-14 0"/>
+          <line x1="12" y1="19" x2="12" y2="22"/>
+          <line x1="8" y1="22" x2="16" y2="22"/>
+        </svg>
+      </button>
       <button id="sendBtn" title="Send message" aria-label="Send">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
              stroke-linecap="round" stroke-linejoin="round">

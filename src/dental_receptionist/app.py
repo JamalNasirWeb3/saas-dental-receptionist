@@ -2,14 +2,16 @@
 
 import os
 import secrets
+import tempfile
 import uuid
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import Depends, FastAPI, HTTPException, Request, status
+from fastapi import Depends, FastAPI, File, HTTPException, Request, UploadFile, status
 from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from fastapi.staticfiles import StaticFiles
+from openai import AsyncOpenAI
 
 from .database import cancel_appointment, get_all_appointments, init_db
 from .agent import ReceptionistAgent
@@ -18,6 +20,8 @@ _basic = HTTPBasic()
 
 # Shared agent instance (manages session state in memory)
 agent = ReceptionistAgent()
+
+openai_client = AsyncOpenAI()  # reads OPENAI_API_KEY from env
 
 STATIC_DIR = Path(__file__).parent.parent.parent / "static"
 
@@ -116,6 +120,22 @@ async def api_appointments(
         search=search,
     )
     return JSONResponse(rows)
+
+
+@app.post("/transcribe")
+async def transcribe(audio: UploadFile = File(...), language: str = "en"):
+    """Transcribe audio using OpenAI Whisper. Returns {text: ...}."""
+    with tempfile.NamedTemporaryFile(suffix=".webm", delete=False) as tmp:
+        tmp.write(await audio.read())
+        tmp_path = tmp.name
+    try:
+        with open(tmp_path, "rb") as f:
+            result = await openai_client.audio.transcriptions.create(
+                model="whisper-1", file=f, language=language
+            )
+        return JSONResponse({"text": result.text})
+    finally:
+        os.unlink(tmp_path)
 
 
 @app.post("/api/appointments/{appointment_id}/cancel")

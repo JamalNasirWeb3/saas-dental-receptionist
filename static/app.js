@@ -1,6 +1,27 @@
+/* ── SVG icon strings ────────────────────────────────────── */
+const SPEAKER_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+     stroke-linecap="round" stroke-linejoin="round" width="18" height="18">
+  <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+  <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
+  <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+</svg>`;
+
+const MUTED_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+     stroke-linecap="round" stroke-linejoin="round" width="18" height="18">
+  <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+  <line x1="23" y1="9" x2="17" y2="15"/>
+  <line x1="17" y1="9" x2="23" y2="15"/>
+</svg>`;
+
 /* ── State ───────────────────────────────────────────────── */
-let sessionId = sessionStorage.getItem("sessionId");
-let isStreaming = false;
+let sessionId        = sessionStorage.getItem("sessionId");
+let isStreaming      = false;
+let isListening      = false;
+let voiceOutputEnabled = true;
+let selectedLang     = "en";
+let mediaRecorder    = null;
+let audioChunks      = [];
+let activeStream     = null;
 
 /* ── Boot ────────────────────────────────────────────────── */
 document.addEventListener("DOMContentLoaded", async () => {
@@ -10,6 +31,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     sessionId = data.session_id;
     sessionStorage.setItem("sessionId", sessionId);
   }
+
+  // Init mute button with speaker icon
+  document.getElementById("muteBtn").innerHTML = SPEAKER_SVG;
 
   // Welcome message
   appendBotBubble(
@@ -26,8 +50,11 @@ document.addEventListener("DOMContentLoaded", async () => {
 
 /* ── Input setup ─────────────────────────────────────────── */
 function setupInput() {
-  const input = document.getElementById("messageInput");
-  const btn   = document.getElementById("sendBtn");
+  const input      = document.getElementById("messageInput");
+  const btn        = document.getElementById("sendBtn");
+  const micBtn     = document.getElementById("micBtn");
+  const muteBtn    = document.getElementById("muteBtn");
+  const langSelect = document.getElementById("langSelect");
 
   // Auto-grow textarea
   input.addEventListener("input", () => {
@@ -44,11 +71,122 @@ function setupInput() {
   });
 
   btn.addEventListener("click", sendMessage);
+
+  // Mic button — toggle recording
+  micBtn.addEventListener("click", () => {
+    if (isListening) {
+      stopListening();
+    } else {
+      startListening();
+    }
+  });
+
+  // Mute button — toggle TTS
+  muteBtn.addEventListener("click", () => {
+    voiceOutputEnabled = !voiceOutputEnabled;
+    muteBtn.classList.toggle("muted", !voiceOutputEnabled);
+    muteBtn.setAttribute(
+      "aria-label",
+      voiceOutputEnabled ? "Mute voice output" : "Unmute voice output"
+    );
+    muteBtn.innerHTML = voiceOutputEnabled ? SPEAKER_SVG : MUTED_SVG;
+    if (!voiceOutputEnabled) speechSynthesis.cancel();
+  });
+
+  // Language selector
+  langSelect.addEventListener("change", () => {
+    selectedLang = langSelect.value;
+  });
+}
+
+/* ── Voice recording ─────────────────────────────────────── */
+async function startListening() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    activeStream = stream;
+    audioChunks  = [];
+
+    mediaRecorder = new MediaRecorder(stream);
+    mediaRecorder.addEventListener("dataavailable", (e) => {
+      if (e.data.size > 0) audioChunks.push(e.data);
+    });
+    mediaRecorder.addEventListener("stop", () => {
+      const blob = new Blob(audioChunks, { type: "audio/webm" });
+      transcribeAudio(blob);
+    });
+
+    mediaRecorder.start();
+    isListening = true;
+    document.getElementById("micBtn").classList.add("recording");
+    showVoiceBar("Listening…");
+  } catch (err) {
+    console.error("Mic error:", err);
+    hideVoiceBar();
+    alert("Microphone access denied or unavailable.");
+  }
+}
+
+function stopListening() {
+  if (mediaRecorder && mediaRecorder.state !== "inactive") {
+    mediaRecorder.stop();
+  }
+  if (activeStream) {
+    activeStream.getTracks().forEach((t) => t.stop());
+    activeStream = null;
+  }
+  isListening = false;
+  document.getElementById("micBtn").classList.remove("recording");
+}
+
+async function transcribeAudio(blob) {
+  showVoiceBar("Processing…");
+  try {
+    const form = new FormData();
+    form.append("audio", blob, "recording.webm");
+    form.append("language", selectedLang);
+
+    const res = await fetch("/transcribe", { method: "POST", body: form });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+    const { text } = await res.json();
+    hideVoiceBar();
+
+    if (text && text.trim()) {
+      document.getElementById("messageInput").value = text;
+      sendMessage();
+    }
+  } catch (err) {
+    hideVoiceBar();
+    console.error("Transcription error:", err);
+  }
+}
+
+/* ── TTS ─────────────────────────────────────────────────── */
+function speakText(text) {
+  if (!voiceOutputEnabled || !text.trim()) return;
+  speechSynthesis.cancel();
+  const utter = new SpeechSynthesisUtterance(text);
+  utter.lang  = selectedLang === "en" ? "en-US" : selectedLang;
+  utter.rate  = 0.95;
+  speechSynthesis.speak(utter);
+}
+
+/* ── Voice bar ───────────────────────────────────────────── */
+function showVoiceBar(msg) {
+  document.getElementById("voiceBarText").textContent = msg;
+  document.getElementById("voiceBar").classList.remove("hidden");
+}
+
+function hideVoiceBar() {
+  document.getElementById("voiceBar").classList.add("hidden");
 }
 
 /* ── Send ────────────────────────────────────────────────── */
 async function sendMessage() {
   if (isStreaming) return;
+
+  // Stop any ongoing speech when user sends a new message
+  speechSynthesis.cancel();
 
   const input = document.getElementById("messageInput");
   const text  = input.value.trim();
@@ -66,7 +204,7 @@ async function sendMessage() {
   // Show typing indicator
   const typingRow = appendTypingIndicator();
 
-  // Create bot bubble (will be filled by stream)
+  // Bot bubble filled by stream
   let botBubble = null;
   let accText   = "";
 
@@ -101,10 +239,8 @@ async function sendMessage() {
         catch { continue; }
 
         if (payload.type === "text") {
-          // Remove typing indicator on first text chunk
           if (typingRow && typingRow.parentNode) typingRow.remove();
           if (!botBubble) botBubble = createBotBubble();
-
           accText += payload.chunk;
           botBubble.textContent = accText;
           scrollToBottom();
@@ -122,6 +258,7 @@ async function sendMessage() {
         } else if (payload.type === "done") {
           hideToolBar();
           if (typingRow && typingRow.parentNode) typingRow.remove();
+          speakText(accText);
         }
       }
     }
@@ -190,8 +327,8 @@ function createBotBubble() {
 }
 
 function appendTypingIndicator() {
-  const row    = msgRow("bot");
-  const dots   = document.createElement("div");
+  const row  = msgRow("bot");
+  const dots = document.createElement("div");
   dots.className = "bubble typing-dots";
   dots.innerHTML = "<span></span><span></span><span></span>";
   row.appendChild(dots);
@@ -229,4 +366,5 @@ function hideToolBar() {
 function setInputDisabled(disabled) {
   document.getElementById("messageInput").disabled = disabled;
   document.getElementById("sendBtn").disabled      = disabled;
+  document.getElementById("micBtn").disabled       = disabled;
 }
