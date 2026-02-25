@@ -1,5 +1,7 @@
 """Tool schemas and async implementations for the Claude agentic loop."""
 
+import asyncio
+
 from .config import CLINIC_NAME, CLINIC_ADDRESS, CLINIC_PHONE, HOURS, SERVICES, FAQ
 from .database import (
     get_slots,
@@ -149,6 +151,20 @@ async def _schedule_appointment(
             patient_name, patient_phone, patient_email, service_type, date, time
         )
         svc_name = SERVICES.get(service_type, {}).get("name", service_type)
+
+        # Send WhatsApp confirmation in background (non-blocking)
+        from .whatsapp import send_booking_confirmation
+        asyncio.get_event_loop().run_in_executor(
+            None,
+            send_booking_confirmation,
+            patient_name,
+            patient_phone,
+            svc_name,
+            date,
+            _fmt_time(time),
+            result["id"],
+        )
+
         return (
             f"Appointment confirmed!\n"
             f"  Appointment ID : #{result['id']}\n"
@@ -157,7 +173,8 @@ async def _schedule_appointment(
             f"  Date           : {date}\n"
             f"  Time           : {_fmt_time(time)}\n"
             f"  Phone          : {patient_phone}\n\n"
-            f"Reminder: 24-hour cancellation notice is required to avoid a fee."
+            f"Reminder: 24-hour cancellation notice is required to avoid a fee.\n"
+            f"A WhatsApp confirmation has been sent to {patient_phone}."
         )
     except Exception as exc:
         return f"Failed to schedule appointment: {exc}"
