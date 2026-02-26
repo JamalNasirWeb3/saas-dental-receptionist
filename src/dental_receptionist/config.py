@@ -1,9 +1,9 @@
 """Clinic configuration: hours, services, FAQ."""
 
 CLINIC_NAME = "Bright Smile Dental"
-CLINIC_ADDRESS = "123 Main Street, Springfield, IL 62701"
-CLINIC_PHONE = "(217) 555-0100"
-CLINIC_EMAIL = "info@brightsmile.dental"
+CLINIC_ADDRESS = "Plot 22 Street 17 DHA Phase-2, Islamabad"
+CLINIC_PHONE = "0301-9568220"
+CLINIC_EMAIL = "clinicbright@gmail.com"
 
 HOURS: dict[str, str] = {
     "Monday":    "9:00 AM – 5:00 PM",
@@ -17,12 +17,12 @@ HOURS: dict[str, str] = {
 
 # service_key → {name, duration_min, price}
 SERVICES: dict[str, dict] = {
-    "cleaning":   {"name": "Teeth Cleaning",     "duration_min": 60,  "price": "$120"},
-    "checkup":    {"name": "Dental Check-up",     "duration_min": 45,  "price": "$80"},
-    "filling":    {"name": "Dental Filling",      "duration_min": 90,  "price": "$200"},
-    "extraction": {"name": "Tooth Extraction",    "duration_min": 60,  "price": "$250"},
-    "whitening":  {"name": "Teeth Whitening",     "duration_min": 90,  "price": "$350"},
-    "emergency":  {"name": "Emergency Visit",     "duration_min": 30,  "price": "$150"},
+    "cleaning":   {"name": "Teeth Cleaning",     "duration_min": 60,  "price": "RS 3,500"},
+    "checkup":    {"name": "Dental Check-up",     "duration_min": 45,  "price": "RS 2,000"},
+    "filling":    {"name": "Dental Filling",      "duration_min": 90,  "price": "RS 5,500"},
+    "extraction": {"name": "Tooth Extraction",    "duration_min": 60,  "price": "RS 6,500"},
+    "whitening":  {"name": "Teeth Whitening",     "duration_min": 90,  "price": "RS 9,500"},
+    "emergency":  {"name": "Emergency Visit",     "duration_min": 30,  "price": "RS 4,000"},
 }
 
 FAQ: dict[str, str] = {
