@@ -152,9 +152,10 @@ async def _schedule_appointment(
         )
         svc_name = SERVICES.get(service_type, {}).get("name", service_type)
 
-        # Send WhatsApp confirmation in background (non-blocking)
+        # Send WhatsApp confirmation (runs in thread to avoid blocking the event loop)
         from .whatsapp import send_booking_confirmation
-        asyncio.get_event_loop().run_in_executor(
+        import asyncio
+        await asyncio.get_event_loop().run_in_executor(
             None,
             send_booking_confirmation,
             patient_name,
@@ -163,6 +164,7 @@ async def _schedule_appointment(
             date,
             _fmt_time(time),
             result["id"],
+            patient_email,
         )
 
         return (
@@ -174,7 +176,7 @@ async def _schedule_appointment(
             f"  Time           : {_fmt_time(time)}\n"
             f"  Phone          : {patient_phone}\n\n"
             f"Reminder: 24-hour cancellation notice is required to avoid a fee.\n"
-            f"A WhatsApp confirmation has been sent to {patient_phone}."
+            f"A confirmation email has been sent to {patient_email}."
         )
     except Exception as exc:
         return f"Failed to schedule appointment: {exc}"

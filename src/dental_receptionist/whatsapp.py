@@ -1,26 +1,12 @@
-"""WhatsApp booking confirmation via Twilio."""
+"""Booking confirmation email via SMTP."""
 
 import logging
 import os
-import re
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 
 logger = logging.getLogger(__name__)
-
-
-def _to_e164(phone: str, default_country_code: str = "1") -> str:
-    """
-    Normalise an arbitrary phone string to E.164 format (+CCCNNNNNNNNN).
-
-    - Strips all non-digit characters.
-    - If the result is 10 digits it prepends the default country code (US/CA).
-    - If it already starts with the country code it is left as-is.
-    - Returns the original string unchanged when normalisation is not possible,
-      so the caller can still attempt the send and surface a clean Twilio error.
-    """
-    digits = re.sub(r"\D", "", phone)
-    if len(digits) == 10:
-        digits = default_country_code + digits
-    return f"+{digits}" if digits else phone
 
 
 def send_booking_confirmation(
@@ -30,57 +16,113 @@ def send_booking_confirmation(
     date: str,
     time_display: str,
     appointment_id: int,
+    patient_email: str = "",
 ) -> bool:
     """
-    Send a WhatsApp booking-confirmation message to the patient.
+    Send a booking-confirmation email via SMTP.
 
     Required environment variables
     --------------------------------
-    TWILIO_ACCOUNT_SID   – Twilio account SID (ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx)
-    TWILIO_AUTH_TOKEN    – Twilio auth token
-    TWILIO_WHATSAPP_FROM – Twilio WhatsApp-enabled number in E.164 format
-                           e.g.  +14155238886  (Twilio Sandbox)
-                           or    +1XXXXXXXXXX  (approved production number)
+    EMAIL_SENDER    – sender address (e.g. yourname@gmail.com)
+    EMAIL_PASSWORD  – app password (Gmail: 16-char app password)
+    EMAIL_SMTP_HOST – SMTP host   (default: smtp.gmail.com)
+    EMAIL_SMTP_PORT – SMTP port   (default: 587)
 
     Returns True on success, False on any error (booking is never blocked).
     """
-    account_sid = os.getenv("TWILIO_ACCOUNT_SID")
-    auth_token = os.getenv("TWILIO_AUTH_TOKEN")
-    from_number = os.getenv("TWILIO_WHATSAPP_FROM")
+    sender = os.getenv("EMAIL_SENDER") or os.getenv("GMAIL_EMAIL")
+    password = os.getenv("EMAIL_PASSWORD") or os.getenv("GMAIL_APP_PASSWORD")
+    smtp_host = os.getenv("EMAIL_SMTP_HOST", "smtp.gmail.com")
+    smtp_port = int(os.getenv("EMAIL_SMTP_PORT", "587"))
 
-    if not all([account_sid, auth_token, from_number]):
+    if not all([sender, password]):
         logger.warning(
-            "WhatsApp notification skipped — TWILIO_ACCOUNT_SID, "
-            "TWILIO_AUTH_TOKEN, or TWILIO_WHATSAPP_FROM not set in .env"
+            "Email notification skipped — EMAIL_SENDER/GMAIL_EMAIL or "
+            "EMAIL_PASSWORD/GMAIL_APP_PASSWORD not set in .env"
         )
         return False
 
+    recipient = patient_email or ""
+    if not recipient or "@" not in recipient:
+        logger.warning("Email notification skipped — no valid patient email address provided")
+        return False
+
+    subject = f"Appointment Confirmed – Bright Smile Dental (#{appointment_id})"
+
+    html_body = f"""
+    <html>
+    <body style="font-family: Arial, sans-serif; color: #333; max-width: 600px; margin: auto;">
+        <div style="background: #1a73e8; padding: 24px; border-radius: 8px 8px 0 0;">
+            <h1 style="color: white; margin: 0; font-size: 22px;">Bright Smile Dental</h1>
+            <p style="color: #d0e8ff; margin: 4px 0 0;">Appointment Confirmation</p>
+        </div>
+        <div style="background: #f9f9f9; padding: 24px; border: 1px solid #ddd; border-top: none; border-radius: 0 0 8px 8px;">
+            <p style="font-size: 16px;">Hello <strong>{patient_name}</strong>,</p>
+            <p>Your appointment has been confirmed. Here are your booking details:</p>
+
+            <table style="width: 100%; border-collapse: collapse; margin: 16px 0;">
+                <tr style="background: #eaf2ff;">
+                    <td style="padding: 10px 14px; font-weight: bold; width: 40%;">Booking ID</td>
+                    <td style="padding: 10px 14px;">#{appointment_id}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 10px 14px; font-weight: bold;">Service</td>
+                    <td style="padding: 10px 14px;">{service_name}</td>
+                </tr>
+                <tr style="background: #eaf2ff;">
+                    <td style="padding: 10px 14px; font-weight: bold;">Date</td>
+                    <td style="padding: 10px 14px;">{date}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 10px 14px; font-weight: bold;">Time</td>
+                    <td style="padding: 10px 14px;">{time_display}</td>
+                </tr>
+                <tr style="background: #eaf2ff;">
+                    <td style="padding: 10px 14px; font-weight: bold;">Phone</td>
+                    <td style="padding: 10px 14px;">{patient_phone}</td>
+                </tr>
+            </table>
+
+            <div style="background: #fff8e1; border-left: 4px solid #f9a825; padding: 12px 16px; margin: 16px 0; border-radius: 4px;">
+                <strong>Cancellation Policy:</strong> 24-hour notice is required to avoid a cancellation fee.
+            </div>
+
+            <p>Questions? Call us at <strong>(217) 555-0100</strong>.</p>
+            <p style="margin-top: 24px;">See you soon!<br><strong>Bright Smile Dental Team</strong></p>
+        </div>
+    </body>
+    </html>
+    """
+
+    text_body = (
+        f"Hello {patient_name},\n\n"
+        f"Your appointment at Bright Smile Dental is confirmed:\n\n"
+        f"  Booking ID : #{appointment_id}\n"
+        f"  Service    : {service_name}\n"
+        f"  Date       : {date}\n"
+        f"  Time       : {time_display}\n"
+        f"  Phone      : {patient_phone}\n\n"
+        f"Cancellation Policy: 24-hour notice required to avoid a fee.\n"
+        f"Questions? Call (217) 555-0100.\n\n"
+        f"See you soon!\n"
+        f"Bright Smile Dental Team"
+    )
+
+    msg = MIMEMultipart("alternative")
+    msg["Subject"] = subject
+    msg["From"] = f"Bright Smile Dental <{sender}>"
+    msg["To"] = recipient
+    msg.attach(MIMEText(text_body, "plain"))
+    msg.attach(MIMEText(html_body, "html"))
+
     try:
-        from twilio.rest import Client  # imported here to avoid hard dep at startup
-
-        to_number = _to_e164(patient_phone)
-
-        message_body = (
-            f"Hello {patient_name}! 😊\n\n"
-            f"Your appointment at *Bright Smile Dental* is confirmed:\n\n"
-            f"🦷 *Service:* {service_name}\n"
-            f"📅 *Date:* {date}\n"
-            f"🕐 *Time:* {time_display}\n"
-            f"🔖 *Booking ID:* #{appointment_id}\n\n"
-            f"Please note: 24-hour cancellation notice is required to avoid a fee.\n"
-            f"Questions? Call us at (217) 555-0100.\n\n"
-            f"See you soon! ✨"
-        )
-
-        client = Client(account_sid, auth_token)
-        msg = client.messages.create(
-            from_=f"whatsapp:{from_number}",
-            to=f"whatsapp:{to_number}",
-            body=message_body,
-        )
-        logger.info("WhatsApp confirmation sent: SID=%s to=%s", msg.sid, to_number)
+        with smtplib.SMTP(smtp_host, smtp_port) as server:
+            server.ehlo()
+            server.starttls()
+            server.login(sender, password)
+            server.sendmail(sender, recipient, msg.as_string())
+        logger.info("Booking confirmation email sent to %s (ID #%s)", recipient, appointment_id)
         return True
-
     except Exception:
-        logger.exception("Failed to send WhatsApp confirmation to %s", patient_phone)
+        logger.exception("Failed to send booking confirmation email to %s", recipient)
         return False
