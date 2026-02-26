@@ -1,0 +1,118 @@
+@import "tailwindcss";
+
+@theme {
+  /* Brand color palette — matches existing style.css tokens */
+  --color-blue-50: #e3f2fd;
+  --color-blue-100: #bbdefb;
+  --color-blue-200: #90caf9;
+  --color-blue-300: #64b5f6;
+  --color-blue-500: #2196f3;
+  --color-blue-600: #1e88e5;
+  --color-blue-700: #1976d2;
+
+  --color-grey-50: #fafafa;
+  --color-grey-100: #f5f5f5;
+  --color-grey-200: #eeeeee;
+  --color-grey-300: #e0e0e0;
+  --color-grey-400: #bdbdbd;
+  --color-grey-600: #757575;
+  --color-grey-800: #424242;
+
+  --color-green-50: #e8f5e9;
+  --color-green-600: #43a047;
+
+  --color-red-50: #ffebee;
+  --color-red-400: #ef5350;
+  --color-red-600: #e53935;
+  --color-red-700: #c62828;
+
+  /* Custom border radii */
+  --radius-bubble: 18px;
+  --radius-card: 10px;
+
+  /* Custom shadows */
+  --shadow-card: 0 2px 12px rgba(0, 0, 0, 0.08);
+  --shadow-chat: 0 2px 12px rgba(0, 0, 0, 0.10);
+  --shadow-modal: 0 8px 32px rgba(0, 0, 0, 0.18);
+
+  /* Custom animations */
+  --animate-bounce-dot: bounce-dot 0.9s infinite;
+  --animate-spin-fast: spin 0.7s linear infinite;
+  --animate-mic-pulse: mic-pulse 1.2s ease-in-out infinite;
+  --animate-pulse-dot: pulse-dot 1s ease-in-out infinite;
+}
+
+@keyframes bounce-dot {
+  0%, 60%, 100% { transform: translateY(0); }
+  30%           { transform: translateY(-5px); }
+}
+
+@keyframes mic-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(229, 57, 53, 0.4); }
+  50%       { box-shadow: 0 0 0 8px rgba(229, 57, 53, 0); }
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.3; }
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body {
+  height: 100%;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  color: #424242;
+}
+
+/* Thin scrollbar helper — not expressible with Tailwind utilities alone */
+.thin-scroll::-webkit-scrollbar       { width: 5px; }
+.thin-scroll::-webkit-scrollbar-track { background: transparent; }
+.thin-scroll::-webkit-scrollbar-thumb { background: #eeeeee; border-radius: 4px; }
+
+/* ── Markdown rendering inside bot chat bubbles ─────────── */
+.bot-markdown p                    { margin-bottom: 0.45em; line-height: 1.6; }
+.bot-markdown p:last-child         { margin-bottom: 0; }
+.bot-markdown ul, .bot-markdown ol { padding-left: 1.3em; margin-bottom: 0.45em; }
+.bot-markdown li:not(:last-child)  { margin-bottom: 0.2em; }
+.bot-markdown strong               { font-weight: 600; }
+.bot-markdown em                   { font-style: italic; }
+.bot-markdown h1, .bot-markdown h2, .bot-markdown h3 {
+  font-weight: 700; margin-bottom: 0.3em; margin-top: 0.4em;
+}
+
+/* Fee / service tables rendered in chat */
+.bot-markdown .table-wrap {
+  overflow-x: auto;
+  margin: 0.65em 0;
+  border-radius: 10px;
+  border: 1px solid #e0e0e0;
+  box-shadow: 0 1px 6px rgba(0,0,0,0.06);
+}
+.bot-markdown table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 0.84rem;
+}
+.bot-markdown thead tr {
+  background: linear-gradient(135deg, #1976d2 0%, #1e88e5 100%);
+}
+.bot-markdown th {
+  padding: 9px 14px;
+  text-align: left;
+  font-weight: 600;
+  font-size: 0.73rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #ffffff;
+  white-space: nowrap;
+}
+.bot-markdown tbody tr:nth-child(even)  { background: #f9fbff; }
+.bot-markdown tbody tr:hover            { background: #e3f2fd; transition: background 0.15s; }
+.bot-markdown td {
+  padding: 8px 14px;
+  border-bottom: 1px solid #eeeeee;
+  color: #424242;
+  vertical-align: middle;
+}
+.bot-markdown tbody tr:last-child td { border-bottom: none; }

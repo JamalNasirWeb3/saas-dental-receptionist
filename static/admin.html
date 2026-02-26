@@ -37,7 +37,7 @@
         <span class="header-icon">🦷</span>
         <div>
           <h1>Bright Smile Dental</h1>
-          <span class="header-sub">Appointments Dashboard</span>
+          <span class="header-sub">Admin Dashboard</span>
         </div>
       </div>
       <div class="dash-actions">
@@ -46,68 +46,209 @@
           Refresh
         </button>
         <a href="/" class="btn btn-ghost">Chat UI</a>
-        <button id="changePasswordBtn" class="btn btn-ghost">Change Password</button>
         <button id="logoutBtn" class="btn btn-ghost">Logout</button>
       </div>
     </header>
 
-    <!-- Stats row -->
-    <div class="stats-row">
-      <div class="stat-card">
-        <div class="stat-value" id="statToday">—</div>
-        <div class="stat-label">Today</div>
-      </div>
-      <div class="stat-card stat-confirmed">
-        <div class="stat-value" id="statConfirmed">—</div>
-        <div class="stat-label">Confirmed</div>
-      </div>
-      <div class="stat-card stat-cancelled">
-        <div class="stat-value" id="statCancelled">—</div>
-        <div class="stat-label">Cancelled</div>
-      </div>
-      <div class="stat-card stat-total">
-        <div class="stat-value" id="statTotal">—</div>
-        <div class="stat-label">All Time</div>
-      </div>
-    </div>
+    <!-- Tab nav -->
+    <nav class="tab-nav">
+      <button class="tab-btn active" data-tab="appointments">Appointments</button>
+      <button class="tab-btn"        data-tab="settings">Settings</button>
+    </nav>
 
-    <!-- Filters -->
-    <div class="filter-bar">
-      <input type="date" id="filterDate" title="Filter by date" />
-      <select id="filterStatus">
-        <option value="">All Statuses</option>
-        <option value="confirmed">Confirmed</option>
-        <option value="cancelled">Cancelled</option>
-      </select>
-      <input type="text" id="filterSearch" placeholder="Search patient name…" />
-      <button id="clearFilters" class="btn btn-ghost btn-sm">Clear filters</button>
-    </div>
+    <!-- ── Appointments tab ───────────────────────────── -->
+    <div id="tab-appointments" class="tab-pane">
 
-    <!-- Table -->
-    <div class="table-wrap">
-      <table class="apt-table">
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Patient</th>
-            <th>Phone</th>
-            <th>Service</th>
-            <th>Date</th>
-            <th>Time</th>
-            <th>Status</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody id="aptTableBody">
-          <tr><td colspan="8" class="empty-row">Loading…</td></tr>
-        </tbody>
-      </table>
-    </div>
+      <!-- Stats row -->
+      <div class="stats-row">
+        <div class="stat-card">
+          <div class="stat-value" id="statToday">—</div>
+          <div class="stat-label">Today</div>
+        </div>
+        <div class="stat-card stat-confirmed">
+          <div class="stat-value" id="statConfirmed">—</div>
+          <div class="stat-label">Confirmed</div>
+        </div>
+        <div class="stat-card stat-cancelled">
+          <div class="stat-value" id="statCancelled">—</div>
+          <div class="stat-label">Cancelled</div>
+        </div>
+        <div class="stat-card stat-total">
+          <div class="stat-value" id="statTotal">—</div>
+          <div class="stat-label">All Time</div>
+        </div>
+      </div>
 
-    <footer class="dash-footer">
-      Auto-refreshes every 60 s &middot; <span id="lastRefresh"></span>
-    </footer>
-  </div>
+      <!-- Filters -->
+      <div class="filter-bar">
+        <input type="date" id="filterDate" title="Filter by date" />
+        <select id="filterStatus">
+          <option value="">All Statuses</option>
+          <option value="confirmed">Confirmed</option>
+          <option value="cancelled">Cancelled</option>
+        </select>
+        <input type="text" id="filterSearch" placeholder="Search patient name…" />
+        <button id="clearFilters" class="btn btn-ghost btn-sm">Clear filters</button>
+      </div>
+
+      <!-- Table -->
+      <div class="table-wrap">
+        <table class="apt-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Patient</th>
+              <th>Phone</th>
+              <th>Service</th>
+              <th>Date</th>
+              <th>Time</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="aptTableBody">
+            <tr><td colspan="8" class="empty-row">Loading…</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <footer class="dash-footer">
+        Auto-refreshes every 60 s &middot; <span id="lastRefresh"></span>
+      </footer>
+
+    </div><!-- /tab-appointments -->
+
+    <!-- ── Settings tab ───────────────────────────────── -->
+    <div id="tab-settings" class="tab-pane" hidden>
+      <div class="settings-pane">
+
+        <!-- Section 1: Clinic Information -->
+        <section class="settings-section">
+          <h3>Clinic Information</h3>
+          <div class="field">
+            <label for="cpName">Clinic Name</label>
+            <input id="cpName" type="text" placeholder="e.g. Bright Smile Dental" />
+          </div>
+          <div class="field">
+            <label for="cpAddress">Address</label>
+            <input id="cpAddress" type="text" placeholder="Street address" />
+          </div>
+          <div class="field">
+            <label for="cpPhone">Phone</label>
+            <input id="cpPhone" type="text" placeholder="e.g. 0301-9568220" />
+          </div>
+          <div class="field">
+            <label for="cpEmail">Email</label>
+            <input id="cpEmail" type="email" placeholder="e.g. clinic@example.com" />
+          </div>
+          <div class="settings-save-row">
+            <span class="save-feedback" id="infoFeedback" hidden>Saved!</span>
+            <button id="saveInfoBtn" class="btn btn-primary">Save</button>
+          </div>
+        </section>
+
+        <!-- Section 2: Opening Hours -->
+        <section class="settings-section">
+          <h3>Opening Hours</h3>
+          <p class="section-hint">Use "Closed" for days the clinic is not open.</p>
+          <div class="hours-grid">
+            <div class="hours-row"><label>Monday</label>    <input type="text" id="hours-Monday"    placeholder="9:00 AM – 5:00 PM" /></div>
+            <div class="hours-row"><label>Tuesday</label>   <input type="text" id="hours-Tuesday"   placeholder="9:00 AM – 5:00 PM" /></div>
+            <div class="hours-row"><label>Wednesday</label> <input type="text" id="hours-Wednesday" placeholder="9:00 AM – 5:00 PM" /></div>
+            <div class="hours-row"><label>Thursday</label>  <input type="text" id="hours-Thursday"  placeholder="9:00 AM – 5:00 PM" /></div>
+            <div class="hours-row"><label>Friday</label>    <input type="text" id="hours-Friday"    placeholder="9:00 AM – 5:00 PM" /></div>
+            <div class="hours-row"><label>Saturday</label>  <input type="text" id="hours-Saturday"  placeholder="9:00 AM – 1:00 PM" /></div>
+            <div class="hours-row"><label>Sunday</label>    <input type="text" id="hours-Sunday"    placeholder="Closed" /></div>
+          </div>
+          <div class="settings-save-row">
+            <span class="save-feedback" id="hoursFeedback" hidden>Saved!</span>
+            <button id="saveHoursBtn" class="btn btn-primary">Save</button>
+          </div>
+        </section>
+
+        <!-- Section 3: Services & Pricing -->
+        <section class="settings-section">
+          <h3>Services &amp; Pricing</h3>
+          <table class="settings-table">
+            <thead>
+              <tr>
+                <th>Service Key</th>
+                <th>Display Name</th>
+                <th>Duration (min)</th>
+                <th>Price</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="svc-key">cleaning</td>
+                <td><input type="text"   id="svc-cleaning-name"     /></td>
+                <td><input type="number" id="svc-cleaning-duration"  min="1" /></td>
+                <td><input type="text"   id="svc-cleaning-price"    /></td>
+              </tr>
+              <tr>
+                <td class="svc-key">checkup</td>
+                <td><input type="text"   id="svc-checkup-name"      /></td>
+                <td><input type="number" id="svc-checkup-duration"   min="1" /></td>
+                <td><input type="text"   id="svc-checkup-price"     /></td>
+              </tr>
+              <tr>
+                <td class="svc-key">filling</td>
+                <td><input type="text"   id="svc-filling-name"      /></td>
+                <td><input type="number" id="svc-filling-duration"   min="1" /></td>
+                <td><input type="text"   id="svc-filling-price"     /></td>
+              </tr>
+              <tr>
+                <td class="svc-key">extraction</td>
+                <td><input type="text"   id="svc-extraction-name"   /></td>
+                <td><input type="number" id="svc-extraction-duration" min="1" /></td>
+                <td><input type="text"   id="svc-extraction-price"  /></td>
+              </tr>
+              <tr>
+                <td class="svc-key">whitening</td>
+                <td><input type="text"   id="svc-whitening-name"    /></td>
+                <td><input type="number" id="svc-whitening-duration"  min="1" /></td>
+                <td><input type="text"   id="svc-whitening-price"   /></td>
+              </tr>
+              <tr>
+                <td class="svc-key">emergency</td>
+                <td><input type="text"   id="svc-emergency-name"    /></td>
+                <td><input type="number" id="svc-emergency-duration"  min="1" /></td>
+                <td><input type="text"   id="svc-emergency-price"   /></td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="settings-save-row">
+            <span class="save-feedback" id="svcFeedback" hidden>Saved!</span>
+            <button id="saveServicesBtn" class="btn btn-primary">Save</button>
+          </div>
+        </section>
+
+        <!-- Section 4: Change Password -->
+        <section class="settings-section">
+          <h3>Change Password</h3>
+          <div class="field">
+            <label for="cpCurrent">Current Password</label>
+            <input id="cpCurrent" type="password" placeholder="Current password" autocomplete="current-password" />
+          </div>
+          <div class="field">
+            <label for="cpNew">New Password</label>
+            <input id="cpNew" type="password" placeholder="At least 8 characters" autocomplete="new-password" />
+          </div>
+          <div class="field">
+            <label for="cpConfirm">Confirm New Password</label>
+            <input id="cpConfirm" type="password" placeholder="Repeat new password" autocomplete="new-password" />
+          </div>
+          <div class="cp-error"   id="cpError2"   hidden></div>
+          <div class="cp-success" id="cpSuccess2" hidden>Password changed successfully.</div>
+          <div class="settings-save-row">
+            <button id="cpSaveBtn2" class="btn btn-primary">Change Password</button>
+          </div>
+        </section>
+
+      </div><!-- /settings-pane -->
+    </div><!-- /tab-settings -->
+
+  </div><!-- /dashboard -->
 
   <!-- ── Cancel dialog ──────────────────────────────────── -->
   <div class="modal-backdrop" id="cancelBackdrop" hidden>
@@ -121,31 +262,6 @@
       <div class="modal-actions">
         <button id="cancelConfirmBtn" class="btn btn-danger">Yes, cancel it</button>
         <button id="cancelAbortBtn"   class="btn btn-ghost">Go back</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- ── Change Password dialog ─────────────────────────── -->
-  <div class="modal-backdrop" id="changePasswordBackdrop" hidden>
-    <div class="modal-card">
-      <h3>Change Password</h3>
-      <div class="field">
-        <label for="cpCurrent">Current Password</label>
-        <input id="cpCurrent" type="password" placeholder="Current password" autocomplete="current-password" />
-      </div>
-      <div class="field">
-        <label for="cpNew">New Password</label>
-        <input id="cpNew" type="password" placeholder="At least 8 characters" autocomplete="new-password" />
-      </div>
-      <div class="field">
-        <label for="cpConfirm">Confirm New Password</label>
-        <input id="cpConfirm" type="password" placeholder="Repeat new password" autocomplete="new-password" />
-      </div>
-      <div class="cp-error" id="cpError" hidden></div>
-      <div class="cp-success" id="cpSuccess" hidden>Password changed successfully.</div>
-      <div class="modal-actions">
-        <button id="cpSaveBtn" class="btn btn-primary">Save</button>
-        <button id="cpCancelBtn" class="btn btn-ghost">Cancel</button>
       </div>
     </div>
   </div>

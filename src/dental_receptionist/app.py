@@ -15,9 +15,19 @@ from openai import AsyncOpenAI
 
 import hashlib
 import hmac as _hmac
+import json
 import os as _os
 
-from .database import cancel_appointment, get_all_appointments, get_setting, init_db, set_setting
+from .database import (
+    cancel_appointment,
+    get_all_appointments,
+    get_effective_clinic_info,
+    get_effective_hours,
+    get_effective_services,
+    get_setting,
+    init_db,
+    set_setting,
+)
 from .agent import ReceptionistAgent
 
 _basic = HTTPBasic()
@@ -210,4 +220,24 @@ async def api_change_password(
 
     hashed = _hash_password(new_password)
     await set_setting("admin_password", hashed)
+    return JSONResponse({"ok": True})
+
+
+@app.get("/api/settings")
+async def api_get_settings(_: None = Depends(_verify_admin)):
+    """Return current effective clinic settings (info, hours, services)."""
+    return JSONResponse({
+        "info":     await get_effective_clinic_info(),
+        "hours":    await get_effective_hours(),
+        "services": await get_effective_services(),
+    })
+
+
+@app.post("/api/settings")
+async def api_save_settings(request: Request, _: None = Depends(_verify_admin)):
+    """Save one or more settings sections. Accepts {info?, hours?, services?}."""
+    body = await request.json()
+    if "info"     in body: await set_setting("clinic_info",     json.dumps(body["info"]))
+    if "hours"    in body: await set_setting("clinic_hours",    json.dumps(body["hours"]))
+    if "services" in body: await set_setting("clinic_services", json.dumps(body["services"]))
     return JSONResponse({"ok": True})

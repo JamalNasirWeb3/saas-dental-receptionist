@@ -1,5 +1,7 @@
 """SQLite database helpers using aiosqlite."""
 
+import json as _json
+
 import aiosqlite
 from datetime import datetime
 
@@ -66,7 +68,8 @@ async def get_or_create_patient(name: str, phone: str, email: str) -> int:
 
 async def get_slots(date_str: str, service_type: str) -> list[str]:
     """Return available HH:MM time slots for the given date and service."""
-    from .config import HOURS, SERVICES
+    hours = await get_effective_hours()
+    services = await get_effective_services()
 
     try:
         d = datetime.strptime(date_str, "%Y-%m-%d")
@@ -74,7 +77,7 @@ async def get_slots(date_str: str, service_type: str) -> list[str]:
         return []
 
     day_name = d.strftime("%A")
-    day_hours = HOURS.get(day_name, "Closed")
+    day_hours = hours.get(day_name, "Closed")
     if day_hours == "Closed":
         return []
 
@@ -84,7 +87,7 @@ async def get_slots(date_str: str, service_type: str) -> list[str]:
     else:
         open_h, close_h = 9, 17
 
-    duration = SERVICES.get(service_type, {}).get("duration_min", 60)
+    duration = services.get(service_type, {}).get("duration_min", 60)
 
     # Generate candidate slots (30-min grid)
     candidates: list[str] = []
@@ -177,6 +180,43 @@ async def set_setting(key: str, value: str) -> None:
             (key, value),
         )
         await db.commit()
+
+
+async def get_effective_clinic_info() -> dict:
+    """Return clinic info from DB, falling back to config.py defaults."""
+    from .config import CLINIC_NAME, CLINIC_ADDRESS, CLINIC_PHONE, CLINIC_EMAIL
+    raw = await get_setting("clinic_info")
+    if raw:
+        try:
+            return _json.loads(raw)
+        except Exception:
+            pass
+    return {"name": CLINIC_NAME, "address": CLINIC_ADDRESS,
+            "phone": CLINIC_PHONE, "email": CLINIC_EMAIL}
+
+
+async def get_effective_hours() -> dict:
+    """Return clinic hours from DB, falling back to config.py defaults."""
+    from .config import HOURS
+    raw = await get_setting("clinic_hours")
+    if raw:
+        try:
+            return _json.loads(raw)
+        except Exception:
+            pass
+    return dict(HOURS)
+
+
+async def get_effective_services() -> dict:
+    """Return services dict from DB, falling back to config.py defaults."""
+    from .config import SERVICES
+    raw = await get_setting("clinic_services")
+    if raw:
+        try:
+            return _json.loads(raw)
+        except Exception:
+            pass
+    return {k: dict(v) for k, v in SERVICES.items()}
 
 
 async def get_all_appointments(

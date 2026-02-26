@@ -37,11 +37,20 @@ document.addEventListener("DOMContentLoaded", () => {
   // Cancel modal
   document.getElementById("cancelConfirmBtn").addEventListener("click", confirmCancel);
   document.getElementById("cancelAbortBtn").addEventListener("click", closeModal);
+  document.getElementById("cancelBackdrop").addEventListener("click", (e) => {
+    if (e.target === e.currentTarget) closeModal();
+  });
 
-  // Change Password modal
-  document.getElementById("changePasswordBtn").addEventListener("click", openChangePasswordModal);
-  document.getElementById("cpSaveBtn").addEventListener("click", submitChangePassword);
-  document.getElementById("cpCancelBtn").addEventListener("click", closeChangePasswordModal);
+  // Tab switching
+  document.querySelectorAll(".tab-btn").forEach(btn =>
+    btn.addEventListener("click", () => switchTab(btn.dataset.tab))
+  );
+
+  // Settings save buttons
+  document.getElementById("saveInfoBtn").addEventListener("click", saveInfo);
+  document.getElementById("saveHoursBtn").addEventListener("click", saveHours);
+  document.getElementById("saveServicesBtn").addEventListener("click", saveServices);
+  document.getElementById("cpSaveBtn2").addEventListener("click", submitChangePassword2);
 });
 
 /* ── Login ───────────────────────────────────────────────── */
@@ -94,6 +103,16 @@ function showDashboard() {
   startAutoRefresh();
 }
 
+/* ── Tab switching ───────────────────────────────────────── */
+function switchTab(name) {
+  document.querySelectorAll(".tab-pane").forEach(p => p.hidden = true);
+  document.querySelectorAll(".tab-btn").forEach(b =>
+    b.classList.toggle("active", b.dataset.tab === name)
+  );
+  document.getElementById("tab-" + name).hidden = false;
+  if (name === "settings") loadSettings();
+}
+
 /* ── Load appointments from API ──────────────────────────── */
 async function loadAppointments() {
   const res = await fetch("/api/appointments", { headers: getAuthHeader() });
@@ -108,9 +127,9 @@ async function loadAppointments() {
 /* ── Stats ───────────────────────────────────────────────── */
 function updateStats() {
   const today = new Date().toISOString().slice(0, 10);
-  const todayRows    = allAppointments.filter(a => a.date === today);
-  const confirmed    = allAppointments.filter(a => a.status === "confirmed").length;
-  const cancelled    = allAppointments.filter(a => a.status === "cancelled").length;
+  const todayRows = allAppointments.filter(a => a.date === today);
+  const confirmed = allAppointments.filter(a => a.status === "confirmed").length;
+  const cancelled = allAppointments.filter(a => a.status === "cancelled").length;
 
   document.getElementById("statToday").textContent     = todayRows.length;
   document.getElementById("statConfirmed").textContent = confirmed;
@@ -198,16 +217,6 @@ async function confirmCancel() {
   }
 }
 
-// Close modal on backdrop click
-document.addEventListener("DOMContentLoaded", () => {
-  document.getElementById("cancelBackdrop").addEventListener("click", (e) => {
-    if (e.target === e.currentTarget) closeModal();
-  });
-  document.getElementById("changePasswordBackdrop").addEventListener("click", (e) => {
-    if (e.target === e.currentTarget) closeChangePasswordModal();
-  });
-});
-
 /* ── Auto-refresh ────────────────────────────────────────── */
 function startAutoRefresh() {
   clearInterval(refreshTimer);
@@ -252,27 +261,99 @@ function esc(str) {
     .replace(/"/g, "&quot;");
 }
 
-/* ── Change Password modal ───────────────────────────────── */
-function openChangePasswordModal() {
-  document.getElementById("cpCurrent").value = "";
-  document.getElementById("cpNew").value = "";
-  document.getElementById("cpConfirm").value = "";
-  document.getElementById("cpError").hidden = true;
-  document.getElementById("cpSuccess").hidden = true;
-  document.getElementById("changePasswordBackdrop").hidden = false;
-  document.getElementById("cpCurrent").focus();
+/* ── Settings: load ──────────────────────────────────────── */
+async function loadSettings() {
+  const res = await fetch("/api/settings", { headers: getAuthHeader() });
+  if (res.status === 401) { handleLogout(); return; }
+  const { info, hours, services } = await res.json();
+
+  // Clinic info
+  document.getElementById("cpName").value    = info.name    || "";
+  document.getElementById("cpAddress").value = info.address || "";
+  document.getElementById("cpPhone").value   = info.phone   || "";
+  document.getElementById("cpEmail").value   = info.email   || "";
+
+  // Hours
+  ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"].forEach(day => {
+    const el = document.getElementById("hours-" + day);
+    if (el) el.value = hours[day] || "";
+  });
+
+  // Services
+  ["cleaning","checkup","filling","extraction","whitening","emergency"].forEach(key => {
+    const svc = services[key] || {};
+    const nameEl  = document.getElementById("svc-" + key + "-name");
+    const durEl   = document.getElementById("svc-" + key + "-duration");
+    const priceEl = document.getElementById("svc-" + key + "-price");
+    if (nameEl)  nameEl.value  = svc.name         || "";
+    if (durEl)   durEl.value   = svc.duration_min  != null ? svc.duration_min : "";
+    if (priceEl) priceEl.value = svc.price         || "";
+  });
 }
 
-function closeChangePasswordModal() {
-  document.getElementById("changePasswordBackdrop").hidden = true;
+/* ── Settings: save helpers ──────────────────────────────── */
+function showFeedback(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.hidden = false;
+  setTimeout(() => { el.hidden = true; }, 2000);
 }
 
-async function submitChangePassword() {
+async function saveInfo() {
+  const info = {
+    name:    document.getElementById("cpName").value.trim(),
+    address: document.getElementById("cpAddress").value.trim(),
+    phone:   document.getElementById("cpPhone").value.trim(),
+    email:   document.getElementById("cpEmail").value.trim(),
+  };
+  const res = await fetch("/api/settings", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...getAuthHeader() },
+    body: JSON.stringify({ info }),
+  });
+  if (res.status === 401) { handleLogout(); return; }
+  if (res.ok) showFeedback("infoFeedback");
+}
+
+async function saveHours() {
+  const hours = {};
+  ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"].forEach(day => {
+    const el = document.getElementById("hours-" + day);
+    if (el) hours[day] = el.value.trim();
+  });
+  const res = await fetch("/api/settings", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...getAuthHeader() },
+    body: JSON.stringify({ hours }),
+  });
+  if (res.status === 401) { handleLogout(); return; }
+  if (res.ok) showFeedback("hoursFeedback");
+}
+
+async function saveServices() {
+  const services = {};
+  ["cleaning","checkup","filling","extraction","whitening","emergency"].forEach(key => {
+    const name  = document.getElementById("svc-" + key + "-name")?.value.trim()  || "";
+    const dur   = parseInt(document.getElementById("svc-" + key + "-duration")?.value || "0", 10);
+    const price = document.getElementById("svc-" + key + "-price")?.value.trim() || "";
+    services[key] = { name, duration_min: dur, price };
+  });
+  const res = await fetch("/api/settings", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...getAuthHeader() },
+    body: JSON.stringify({ services }),
+  });
+  if (res.status === 401) { handleLogout(); return; }
+  if (res.ok) showFeedback("svcFeedback");
+}
+
+/* ── Change Password (inline in Settings tab) ────────────── */
+async function submitChangePassword2() {
   const current = document.getElementById("cpCurrent").value;
-  const newPass  = document.getElementById("cpNew").value;
-  const confirm  = document.getElementById("cpConfirm").value;
-  const errEl    = document.getElementById("cpError");
-  const okEl     = document.getElementById("cpSuccess");
+  const newPass = document.getElementById("cpNew").value;
+  const confirm = document.getElementById("cpConfirm").value;
+  const errEl   = document.getElementById("cpError2");
+  const okEl    = document.getElementById("cpSuccess2");
 
   errEl.hidden = true;
   okEl.hidden  = true;
@@ -293,7 +374,6 @@ async function submitChangePassword() {
     return;
   }
 
-  // Build auth header using current stored credentials but override password with what user typed
   const storedUser = atob(sessionStorage.getItem("adminAuth") || "").split(":")[0] || "admin";
   const tempAuth = "Basic " + btoa(storedUser + ":" + current);
 
@@ -316,10 +396,12 @@ async function submitChangePassword() {
       return;
     }
 
-    // Update stored credentials so subsequent API calls use the new password
     saveCredentials(storedUser, newPass);
     okEl.hidden = false;
-    setTimeout(closeChangePasswordModal, 1500);
+    document.getElementById("cpCurrent").value = "";
+    document.getElementById("cpNew").value     = "";
+    document.getElementById("cpConfirm").value = "";
+    setTimeout(() => { okEl.hidden = true; }, 3000);
   } catch (err) {
     errEl.textContent = "Network error: " + err.message;
     errEl.hidden = false;

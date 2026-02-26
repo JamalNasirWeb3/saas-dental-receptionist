@@ -2,12 +2,15 @@
 
 import asyncio
 
-from .config import CLINIC_NAME, CLINIC_ADDRESS, CLINIC_PHONE, HOURS, SERVICES, FAQ
+from .config import FAQ, SERVICES as _CONFIG_SERVICES
 from .database import (
     get_slots,
     create_appointment as db_create_appointment,
     cancel_appointment as db_cancel_appointment,
     get_patient_appointments as db_get_patient_appointments,
+    get_effective_clinic_info,
+    get_effective_hours,
+    get_effective_services,
 )
 
 # ---------------------------------------------------------------------------
@@ -31,7 +34,7 @@ TOOLS: list[dict] = [
                 "service_type": {
                     "type": "string",
                     "description": "Type of dental service to book",
-                    "enum": list(SERVICES.keys()),
+                    "enum": list(_CONFIG_SERVICES.keys()),
                 },
             },
             "required": ["date", "service_type"],
@@ -49,7 +52,7 @@ TOOLS: list[dict] = [
                 "service_type": {
                     "type": "string",
                     "description": "Type of dental service",
-                    "enum": list(SERVICES.keys()),
+                    "enum": list(_CONFIG_SERVICES.keys()),
                 },
                 "date": {"type": "string", "description": "Appointment date YYYY-MM-DD"},
                 "time": {"type": "string", "description": "Appointment time HH:MM (24-hour, e.g. 09:00 or 14:30)"},
@@ -126,7 +129,8 @@ def _fmt_time(t: str) -> str:
 
 async def _check_availability(date: str, service_type: str) -> str:
     slots = await get_slots(date, service_type)
-    svc = SERVICES.get(service_type, {})
+    services = await get_effective_services()
+    svc = services.get(service_type, {})
     name = svc.get("name", service_type)
     dur = svc.get("duration_min", 60)
     if not slots:
@@ -150,7 +154,8 @@ async def _schedule_appointment(
         result = await db_create_appointment(
             patient_name, patient_phone, patient_email, service_type, date, time
         )
-        svc_name = SERVICES.get(service_type, {}).get("name", service_type)
+        services = await get_effective_services()
+        svc_name = services.get(service_type, {}).get("name", service_type)
 
         # Send WhatsApp confirmation (runs in thread to avoid blocking the event loop)
         from .whatsapp import send_booking_confirmation
@@ -199,9 +204,10 @@ async def _get_patient_appointments(patient_name: str, patient_phone: str) -> st
     rows = await db_get_patient_appointments(patient_name, patient_phone)
     if not rows:
         return f"No appointments found for {patient_name} (phone: {patient_phone})."
+    services = await get_effective_services()
     lines = [f"Appointments for {patient_name}:"]
     for apt in rows:
-        svc_name = SERVICES.get(apt["service"], {}).get("name", apt["service"])
+        svc_name = services.get(apt["service"], {}).get("name", apt["service"])
         lines.append(
             f"  • ID #{apt['id']}: {svc_name} on {apt['date']} at "
             f"{_fmt_time(apt['time'])} [{apt['status']}]"
@@ -211,23 +217,26 @@ async def _get_patient_appointments(patient_name: str, patient_phone: str) -> st
 
 async def _get_clinic_info(topic: str) -> str:
     t = topic.lower()
+    info = await get_effective_clinic_info()
+    hours = await get_effective_hours()
+    services = await get_effective_services()
 
     if any(w in t for w in ("hour", "open", "close", "schedule", "time")):
-        lines = [f"{CLINIC_NAME} — Office Hours:"]
-        lines += [f"  {day}: {hrs}" for day, hrs in HOURS.items()]
+        lines = [f"{info['name']} — Office Hours:"]
+        lines += [f"  {day}: {hrs}" for day, hrs in hours.items()]
         return "\n".join(lines)
 
     if any(w in t for w in ("service", "treatment", "offer", "procedure", "cost", "price")):
-        lines = [f"{CLINIC_NAME} — Services & Pricing:"]
-        for svc in SERVICES.values():
+        lines = [f"{info['name']} — Services & Pricing:"]
+        for svc in services.values():
             lines.append(f"  • {svc['name']}: {svc['duration_min']} min — {svc['price']}")
         return "\n".join(lines)
 
     if any(w in t for w in ("location", "address", "where", "direction", "find")):
         return (
-            f"{CLINIC_NAME}\n"
-            f"Address : {CLINIC_ADDRESS}\n"
-            f"Phone   : {CLINIC_PHONE}"
+            f"{info['name']}\n"
+            f"Address : {info['address']}\n"
+            f"Phone   : {info['phone']}"
         )
 
     # Check specific FAQ keys
@@ -237,9 +246,9 @@ async def _get_clinic_info(topic: str) -> str:
 
     # General overview
     return (
-        f"{CLINIC_NAME}\n"
-        f"Address : {CLINIC_ADDRESS}\n"
-        f"Phone   : {CLINIC_PHONE}\n"
+        f"{info['name']}\n"
+        f"Address : {info['address']}\n"
+        f"Phone   : {info['phone']}\n"
         f"Hours   : Mon–Fri 9 AM–5 PM, Sat 9 AM–1 PM, Closed Sunday\n"
         f"Services: cleaning, check-up, filling, extraction, whitening, emergency\n"
         f"Ask me about insurance, parking, cancellation policy, or pricing!"

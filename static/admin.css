@@ -407,3 +407,169 @@ html, body {
   .stats-row { grid-template-columns: 1fr 1fr; }
   .login-card { padding: 28px 20px; }
 }
+
+/* ── Tab nav ────────────────────────────────────────────── */
+.tab-nav {
+  display: flex;
+  gap: 4px;
+  padding: 0 0 0 2px;
+  border-bottom: 2px solid var(--grey-300);
+  margin-bottom: 24px;
+}
+
+.tab-btn {
+  padding: 10px 20px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-family: var(--font);
+  font-size: .9rem;
+  font-weight: 500;
+  color: var(--grey-600);
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  transition: color .15s, border-bottom-color .15s;
+}
+
+.tab-btn:hover { color: var(--grey-800); }
+.tab-btn.active { color: var(--blue-600); border-bottom-color: var(--blue-600); }
+
+/* ── Tab pane ───────────────────────────────────────────── */
+.tab-pane { /* shown/hidden via [hidden] */ }
+
+/* ── Settings pane ──────────────────────────────────────── */
+.settings-pane {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding-bottom: 40px;
+}
+
+.settings-section {
+  background: var(--white);
+  border-radius: var(--radius);
+  border: 1px solid var(--grey-300);
+  padding: 24px;
+  box-shadow: var(--shadow);
+}
+
+.settings-section h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--grey-800);
+  margin-bottom: 16px;
+}
+
+.section-hint {
+  font-size: .82rem;
+  color: var(--grey-600);
+  margin-bottom: 14px;
+}
+
+/* Hours grid */
+.hours-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 10px;
+  margin-bottom: 4px;
+}
+
+.hours-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.hours-row label {
+  width: 90px;
+  flex-shrink: 0;
+  font-size: .85rem;
+  font-weight: 600;
+  color: var(--grey-600);
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+
+.hours-row input {
+  flex: 1;
+  border: 1.5px solid var(--grey-300);
+  border-radius: 7px;
+  padding: 7px 10px;
+  font-family: var(--font);
+  font-size: .88rem;
+  outline: none;
+  transition: border-color .2s;
+}
+
+.hours-row input:focus { border-color: var(--blue-500); }
+
+/* Services table */
+.settings-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 4px;
+}
+
+.settings-table th {
+  text-align: left;
+  font-size: .75rem;
+  font-weight: 600;
+  color: var(--grey-600);
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  padding: 6px 8px;
+  border-bottom: 2px solid var(--grey-200);
+}
+
+.settings-table td {
+  padding: 5px 8px;
+  border-bottom: 1px solid var(--grey-100);
+  vertical-align: middle;
+}
+
+.settings-table tbody tr:last-child td { border-bottom: none; }
+
+.settings-table td.svc-key {
+  font-family: "Menlo", "Consolas", monospace;
+  font-size: .82rem;
+  color: var(--grey-600);
+  white-space: nowrap;
+}
+
+.settings-table input {
+  width: 100%;
+  border: 1.5px solid var(--grey-300);
+  border-radius: 6px;
+  padding: 6px 8px;
+  font-family: var(--font);
+  font-size: .88rem;
+  outline: none;
+  transition: border-color .2s;
+}
+
+.settings-table input[type="number"] { width: 80px; }
+
+.settings-table input:focus { border-color: var(--blue-500); }
+
+/* Save row */
+.settings-save-row {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.save-feedback {
+  font-size: .85rem;
+  color: #065f46;
+  background: #ecfdf5;
+  padding: 4px 12px;
+  border-radius: 6px;
+}
+
+/* ── Responsive (settings) ──────────────────────────────── */
+@media (max-width: 700px) {
+  .hours-grid { grid-template-columns: 1fr; }
+  .settings-table input[type="number"] { width: 60px; }
+}
