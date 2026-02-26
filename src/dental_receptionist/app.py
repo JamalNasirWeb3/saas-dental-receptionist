@@ -13,7 +13,9 @@ from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from fastapi.staticfiles import StaticFiles
 from openai import AsyncOpenAI
 
-from passlib.hash import bcrypt as bcrypt_hash
+import hashlib
+import hmac as _hmac
+import os as _os
 
 from .database import cancel_appointment, get_all_appointments, get_setting, init_db, set_setting
 from .agent import ReceptionistAgent
@@ -43,11 +45,29 @@ app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 # Auth helper
 # ---------------------------------------------------------------------------
 
+def _hash_password(plain: str) -> str:
+    """Return a PBKDF2-SHA256 hash string: '<salt_hex>:<dk_hex>'."""
+    salt = _os.urandom(32)
+    dk = hashlib.pbkdf2_hmac("sha256", plain.encode(), salt, 200_000)
+    return salt.hex() + ":" + dk.hex()
+
+
+def _verify_hash(plain: str, stored: str) -> bool:
+    """Verify *plain* against a stored PBKDF2 hash string."""
+    try:
+        salt_hex, dk_hex = stored.split(":", 1)
+        salt = bytes.fromhex(salt_hex)
+        dk = hashlib.pbkdf2_hmac("sha256", plain.encode(), salt, 200_000)
+        return _hmac.compare_digest(dk.hex(), dk_hex)
+    except Exception:
+        return False
+
+
 async def _check_password(plain: str) -> bool:
     """Return True if *plain* matches the stored admin password."""
     hashed = await get_setting("admin_password")
     if hashed:
-        return bcrypt_hash.verify(plain, hashed)
+        return _verify_hash(plain, hashed)
     # Fall back to plain-text compare against env var / default
     fallback = os.getenv("ADMIN_PASSWORD", "admin123")
     return secrets.compare_digest(plain.encode(), fallback.encode())
@@ -188,6 +208,6 @@ async def api_change_password(
     if len(new_password) < 8:
         raise HTTPException(status_code=400, detail="Password must be at least 8 characters")
 
-    hashed = bcrypt_hash.hash(new_password)
+    hashed = _hash_password(new_password)
     await set_setting("admin_password", hashed)
     return JSONResponse({"ok": True})
