@@ -46,6 +46,7 @@
           Refresh
         </button>
         <a href="/" class="btn btn-ghost">Chat UI</a>
+        <button id="changePasswordBtn" class="btn btn-ghost">Change Password</button>
         <button id="logoutBtn" class="btn btn-ghost">Logout</button>
       </div>
     </header>
@@ -120,6 +121,31 @@
       <div class="modal-actions">
         <button id="cancelConfirmBtn" class="btn btn-danger">Yes, cancel it</button>
         <button id="cancelAbortBtn"   class="btn btn-ghost">Go back</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Change Password dialog ─────────────────────────── -->
+  <div class="modal-backdrop" id="changePasswordBackdrop" hidden>
+    <div class="modal-card">
+      <h3>Change Password</h3>
+      <div class="field">
+        <label for="cpCurrent">Current Password</label>
+        <input id="cpCurrent" type="password" placeholder="Current password" autocomplete="current-password" />
+      </div>
+      <div class="field">
+        <label for="cpNew">New Password</label>
+        <input id="cpNew" type="password" placeholder="At least 8 characters" autocomplete="new-password" />
+      </div>
+      <div class="field">
+        <label for="cpConfirm">Confirm New Password</label>
+        <input id="cpConfirm" type="password" placeholder="Repeat new password" autocomplete="new-password" />
+      </div>
+      <div class="cp-error" id="cpError" hidden></div>
+      <div class="cp-success" id="cpSuccess" hidden>Password changed successfully.</div>
+      <div class="modal-actions">
+        <button id="cpSaveBtn" class="btn btn-primary">Save</button>
+        <button id="cpCancelBtn" class="btn btn-ghost">Cancel</button>
       </div>
     </div>
   </div>

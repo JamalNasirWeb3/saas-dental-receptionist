@@ -30,6 +30,12 @@ async def init_db() -> None:
                 created_at TEXT    DEFAULT (datetime('now'))
             )
         """)
+        await db.execute("""
+            CREATE TABLE IF NOT EXISTS settings (
+                key   TEXT PRIMARY KEY,
+                value TEXT NOT NULL
+            )
+        """)
         await db.commit()
 
 
@@ -146,6 +152,31 @@ async def get_patient_appointments(patient_name: str, patient_phone: str) -> lis
         ) as cur:
             rows = await cur.fetchall()
     return [dict(r) for r in rows]
+
+
+# ---------------------------------------------------------------------------
+# Settings
+# ---------------------------------------------------------------------------
+
+async def get_setting(key: str) -> str | None:
+    """Return the value for a settings key, or None if not found."""
+    async with aiosqlite.connect(DB_PATH) as db:
+        async with db.execute(
+            "SELECT value FROM settings WHERE key = ?", (key,)
+        ) as cur:
+            row = await cur.fetchone()
+    return row[0] if row else None
+
+
+async def set_setting(key: str, value: str) -> None:
+    """Upsert a key-value pair in the settings table."""
+    async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute(
+            "INSERT INTO settings (key, value) VALUES (?, ?) "
+            "ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+            (key, value),
+        )
+        await db.commit()
 
 
 async def get_all_appointments(

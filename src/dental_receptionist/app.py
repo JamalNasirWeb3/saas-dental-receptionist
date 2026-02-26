@@ -13,7 +13,9 @@ from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from fastapi.staticfiles import StaticFiles
 from openai import AsyncOpenAI
 
-from .database import cancel_appointment, get_all_appointments, init_db
+from passlib.hash import bcrypt as bcrypt_hash
+
+from .database import cancel_appointment, get_all_appointments, get_setting, init_db, set_setting
 from .agent import ReceptionistAgent
 
 _basic = HTTPBasic()
@@ -41,12 +43,21 @@ app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 # Auth helper
 # ---------------------------------------------------------------------------
 
-def _verify_admin(credentials: HTTPBasicCredentials = Depends(_basic)):
-    """Validate HTTP Basic credentials against ADMIN_PASSWORD env var."""
-    admin_password = os.getenv("ADMIN_PASSWORD", "admin123")
-    ok = secrets.compare_digest(credentials.username.encode(), b"admin") and \
-         secrets.compare_digest(credentials.password.encode(), admin_password.encode())
-    if not ok:
+async def _check_password(plain: str) -> bool:
+    """Return True if *plain* matches the stored admin password."""
+    hashed = await get_setting("admin_password")
+    if hashed:
+        return bcrypt_hash.verify(plain, hashed)
+    # Fall back to plain-text compare against env var / default
+    fallback = os.getenv("ADMIN_PASSWORD", "admin123")
+    return secrets.compare_digest(plain.encode(), fallback.encode())
+
+
+async def _verify_admin(credentials: HTTPBasicCredentials = Depends(_basic)):
+    """Validate HTTP Basic credentials; checks bcrypt hash in DB with plain-text fallback."""
+    username_ok = secrets.compare_digest(credentials.username.encode(), b"admin")
+    password_ok = await _check_password(credentials.password)
+    if not (username_ok and password_ok):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid credentials",
@@ -149,4 +160,34 @@ async def api_cancel_appointment(
     cancelled = await cancel_appointment(appointment_id, reason)
     if not cancelled:
         raise HTTPException(status_code=404, detail="Appointment not found or already cancelled")
+    return JSONResponse({"ok": True})
+
+
+@app.post("/api/admin/change-password")
+async def api_change_password(
+    request: Request,
+    credentials: HTTPBasicCredentials = Depends(_basic),
+):
+    """Change the admin password. Requires valid current credentials in Basic Auth."""
+    # Verify current credentials first
+    username_ok = secrets.compare_digest(credentials.username.encode(), b"admin")
+    current_password_ok = await _check_password(credentials.password)
+    if not (username_ok and current_password_ok):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Current password is incorrect",
+            headers={"WWW-Authenticate": "Basic"},
+        )
+
+    body = await request.json()
+    new_password: str = body.get("new_password", "")
+    confirm_password: str = body.get("confirm_password", "")
+
+    if new_password != confirm_password:
+        raise HTTPException(status_code=400, detail="Passwords do not match")
+    if len(new_password) < 8:
+        raise HTTPException(status_code=400, detail="Password must be at least 8 characters")
+
+    hashed = bcrypt_hash.hash(new_password)
+    await set_setting("admin_password", hashed)
     return JSONResponse({"ok": True})

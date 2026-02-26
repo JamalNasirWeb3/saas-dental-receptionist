@@ -37,6 +37,11 @@ document.addEventListener("DOMContentLoaded", () => {
   // Cancel modal
   document.getElementById("cancelConfirmBtn").addEventListener("click", confirmCancel);
   document.getElementById("cancelAbortBtn").addEventListener("click", closeModal);
+
+  // Change Password modal
+  document.getElementById("changePasswordBtn").addEventListener("click", openChangePasswordModal);
+  document.getElementById("cpSaveBtn").addEventListener("click", submitChangePassword);
+  document.getElementById("cpCancelBtn").addEventListener("click", closeChangePasswordModal);
 });
 
 /* ── Login ───────────────────────────────────────────────── */
@@ -198,6 +203,9 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("cancelBackdrop").addEventListener("click", (e) => {
     if (e.target === e.currentTarget) closeModal();
   });
+  document.getElementById("changePasswordBackdrop").addEventListener("click", (e) => {
+    if (e.target === e.currentTarget) closeChangePasswordModal();
+  });
 });
 
 /* ── Auto-refresh ────────────────────────────────────────── */
@@ -242,4 +250,78 @@ function esc(str) {
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;");
+}
+
+/* ── Change Password modal ───────────────────────────────── */
+function openChangePasswordModal() {
+  document.getElementById("cpCurrent").value = "";
+  document.getElementById("cpNew").value = "";
+  document.getElementById("cpConfirm").value = "";
+  document.getElementById("cpError").hidden = true;
+  document.getElementById("cpSuccess").hidden = true;
+  document.getElementById("changePasswordBackdrop").hidden = false;
+  document.getElementById("cpCurrent").focus();
+}
+
+function closeChangePasswordModal() {
+  document.getElementById("changePasswordBackdrop").hidden = true;
+}
+
+async function submitChangePassword() {
+  const current = document.getElementById("cpCurrent").value;
+  const newPass  = document.getElementById("cpNew").value;
+  const confirm  = document.getElementById("cpConfirm").value;
+  const errEl    = document.getElementById("cpError");
+  const okEl     = document.getElementById("cpSuccess");
+
+  errEl.hidden = true;
+  okEl.hidden  = true;
+
+  if (!current) {
+    errEl.textContent = "Please enter your current password.";
+    errEl.hidden = false;
+    return;
+  }
+  if (newPass.length < 8) {
+    errEl.textContent = "New password must be at least 8 characters.";
+    errEl.hidden = false;
+    return;
+  }
+  if (newPass !== confirm) {
+    errEl.textContent = "New passwords do not match.";
+    errEl.hidden = false;
+    return;
+  }
+
+  // Build auth header using current stored credentials but override password with what user typed
+  const storedUser = atob(sessionStorage.getItem("adminAuth") || "").split(":")[0] || "admin";
+  const tempAuth = "Basic " + btoa(storedUser + ":" + current);
+
+  try {
+    const res = await fetch("/api/admin/change-password", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": tempAuth },
+      body: JSON.stringify({ new_password: newPass, confirm_password: confirm }),
+    });
+
+    if (res.status === 401) {
+      errEl.textContent = "Current password is incorrect.";
+      errEl.hidden = false;
+      return;
+    }
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      errEl.textContent = data.detail || "Failed to change password.";
+      errEl.hidden = false;
+      return;
+    }
+
+    // Update stored credentials so subsequent API calls use the new password
+    saveCredentials(storedUser, newPass);
+    okEl.hidden = false;
+    setTimeout(closeChangePasswordModal, 1500);
+  } catch (err) {
+    errEl.textContent = "Network error: " + err.message;
+    errEl.hidden = false;
+  }
 }

@@ -104,6 +104,24 @@ html, body {
   text-align: left;
 }
 
+.cp-error {
+  background: var(--red-50);
+  color: var(--red-600);
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: .85rem;
+  margin-bottom: 12px;
+}
+
+.cp-success {
+  background: #ecfdf5;
+  color: #065f46;
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: .85rem;
+  margin-bottom: 12px;
+}
+
 /* ── Buttons ────────────────────────────────────────────── */
 .btn {
   display: inline-flex; align-items: center; gap: 6px;
