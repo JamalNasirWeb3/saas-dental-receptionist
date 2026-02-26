@@ -1,8 +1,19 @@
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import type { Components } from "react-markdown";
 import type { ChatMessage } from "@/types";
 
 function timeStr(date: Date): string {
   return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
+
+const mdComponents: Components = {
+  table: ({ children }) => (
+    <div className="table-wrap">
+      <table>{children}</table>
+    </div>
+  ),
+};
 
 export default function MessageBubble({ message }: { message: ChatMessage }) {
   const isBot = message.role === "bot";
@@ -14,13 +25,15 @@ export default function MessageBubble({ message }: { message: ChatMessage }) {
           🦷
         </div>
         <div
-          className={`max-w-[72%] px-[14px] py-[10px] rounded-bubble rounded-bl-[6px] leading-[1.55] text-[0.93rem] whitespace-pre-wrap break-words ${
+          className={`bot-markdown max-w-[72%] px-[14px] py-[10px] rounded-bubble rounded-bl-[6px] leading-[1.55] text-[0.93rem] break-words ${
             message.isError
               ? "bg-red-50 text-red-700"
               : "bg-grey-100 text-grey-800"
           }`}
         >
-          {message.text}
+          <ReactMarkdown remarkPlugins={[remarkGfm]} components={mdComponents}>
+            {message.text}
+          </ReactMarkdown>
         </div>
         <span className="text-[0.7rem] text-grey-400 px-1 pb-0.5 flex-shrink-0">
           {timeStr(message.timestamp)}
