@@ -39,6 +39,14 @@ async def init_db() -> None:
             )
         """)
         await db.commit()
+        # Migration: add reminder_24h_sent column if it doesn't exist yet
+        try:
+            await db.execute(
+                "ALTER TABLE appointments ADD COLUMN reminder_24h_sent INTEGER NOT NULL DEFAULT 0"
+            )
+            await db.commit()
+        except Exception:
+            pass  # Column already exists on subsequent startups
 
 
 # ---------------------------------------------------------------------------
@@ -217,6 +225,33 @@ async def get_effective_services() -> dict:
         except Exception:
             pass
     return {k: dict(v) for k, v in SERVICES.items()}
+
+
+async def get_pending_24h_reminders() -> list[dict]:
+    """Return confirmed appointments due tomorrow that haven't had a reminder sent."""
+    async with aiosqlite.connect(DB_PATH) as db:
+        db.row_factory = aiosqlite.Row
+        async with db.execute(
+            """SELECT a.id, a.service, a.date, a.time,
+                      p.name, p.phone, p.email
+               FROM appointments a
+               JOIN patients p ON a.patient_id = p.id
+               WHERE a.status = 'confirmed'
+                 AND a.reminder_24h_sent = 0
+                 AND a.date = date('now', '+1 day')"""
+        ) as cur:
+            rows = await cur.fetchall()
+    return [dict(r) for r in rows]
+
+
+async def mark_reminder_sent(appointment_id: int) -> None:
+    """Set reminder_24h_sent = 1 for an appointment."""
+    async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute(
+            "UPDATE appointments SET reminder_24h_sent = 1 WHERE id = ?",
+            (appointment_id,),
+        )
+        await db.commit()
 
 
 async def get_all_appointments(

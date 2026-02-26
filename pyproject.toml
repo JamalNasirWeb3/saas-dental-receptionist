@@ -13,6 +13,7 @@ dependencies = [
     "openai>=2.23.0",
     "python-multipart>=0.0.22",
     "twilio>=9.10.2",
+    "apscheduler>=3.10,<4",
 ]
 
 [build-system]

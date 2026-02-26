@@ -7,6 +7,7 @@ import uuid
 from contextlib import asynccontextmanager
 from pathlib import Path
 
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from fastapi import Depends, FastAPI, File, HTTPException, Request, UploadFile, status
 from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
@@ -29,6 +30,7 @@ from .database import (
     set_setting,
 )
 from .agent import ReceptionistAgent
+from .reminders import send_24h_reminders
 
 _basic = HTTPBasic()
 
@@ -43,7 +45,11 @@ STATIC_DIR = Path(__file__).parent.parent.parent / "static"
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await init_db()
+    scheduler = AsyncIOScheduler()
+    scheduler.add_job(send_24h_reminders, "interval", minutes=30)
+    scheduler.start()
     yield
+    scheduler.shutdown()
 
 
 app = FastAPI(title="Dental AI Receptionist", lifespan=lifespan)
