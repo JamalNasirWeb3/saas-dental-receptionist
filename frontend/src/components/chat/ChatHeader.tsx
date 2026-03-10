@@ -3,6 +3,7 @@ interface Props {
   onMuteToggle: () => void;
   lang: string;
   onLangChange: (lang: string) => void;
+  onClose?: () => void;
 }
 
 function SpeakerSVG() {
@@ -43,7 +44,7 @@ function MutedSVG() {
   );
 }
 
-export default function ChatHeader({ isMuted, onMuteToggle, lang, onLangChange }: Props) {
+export default function ChatHeader({ isMuted, onMuteToggle, lang, onLangChange, onClose }: Props) {
   return (
     <header className="flex items-center gap-3 px-5 py-[14px] bg-blue-700 text-white flex-shrink-0">
       <div className="text-[2rem] leading-none">🦷</div>
@@ -73,6 +74,18 @@ export default function ChatHeader({ isMuted, onMuteToggle, lang, onLangChange }
         >
           <option value="en">English</option>
         </select>
+        {onClose && (
+          <button
+            onClick={onClose}
+            aria-label="Close chat"
+            className="bg-transparent border-0 cursor-pointer p-1 rounded flex items-center justify-center text-blue-100 hover:text-white transition-colors ml-1"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" width={18} height={18}>
+              <line x1={18} y1={6} x2={6} y2={18} />
+              <line x1={6} y1={6} x2={18} y2={18} />
+            </svg>
+          </button>
+        )}
       </div>
     </header>
   );

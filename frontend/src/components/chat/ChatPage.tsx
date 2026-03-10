@@ -9,7 +9,7 @@ import ToolBar from "./ToolBar";
 import VoiceBar from "./VoiceBar";
 import ChatFooter from "./ChatFooter";
 
-export default function ChatPage() {
+export default function ChatPage({ embedded = false, onClose }: { embedded?: boolean; onClose?: () => void } = {}) {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [isMuted, setIsMuted] = useState(false);
   const [lang, setLang] = useState("en");
@@ -74,24 +74,35 @@ export default function ChatPage() {
     else voice.startListening();
   }
 
+  const inner = (
+    <>
+      <ChatHeader
+        isMuted={isMuted}
+        onMuteToggle={handleMuteToggle}
+        lang={lang}
+        onLangChange={setLang}
+        onClose={onClose}
+      />
+      <MessageList messages={messages} isBotTyping={isBotTyping} />
+      <ToolBar toolName={toolName} />
+      <VoiceBar status={voice.voiceStatus} />
+      <ChatFooter
+        onSend={doSend}
+        onMicClick={handleMicClick}
+        isStreaming={isStreaming}
+        isListening={voice.isListening}
+      />
+    </>
+  );
+
+  if (embedded) {
+    return <div className="h-full flex flex-col bg-white">{inner}</div>;
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white flex justify-center">
       <div className="w-full max-w-[760px] h-screen flex flex-col bg-white shadow-chat">
-        <ChatHeader
-          isMuted={isMuted}
-          onMuteToggle={handleMuteToggle}
-          lang={lang}
-          onLangChange={setLang}
-        />
-        <MessageList messages={messages} isBotTyping={isBotTyping} />
-        <ToolBar toolName={toolName} />
-        <VoiceBar status={voice.voiceStatus} />
-        <ChatFooter
-          onSend={doSend}
-          onMicClick={handleMicClick}
-          isStreaming={isStreaming}
-          isListening={voice.isListening}
-        />
+        {inner}
       </div>
     </div>
   );
