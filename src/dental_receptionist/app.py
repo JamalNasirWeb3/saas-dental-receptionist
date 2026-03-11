@@ -9,6 +9,7 @@ from pathlib import Path
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from fastapi import Depends, FastAPI, File, HTTPException, Request, UploadFile, status
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from fastapi.staticfiles import StaticFiles
@@ -53,6 +54,14 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="Dental AI Receptionist", lifespan=lifespan)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[os.getenv("FRONTEND_URL", "*")],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
