@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useSSEChat } from "@/hooks/useSSEChat";
 import { useVoice } from "@/hooks/useVoice";
+import { API_BASE } from "@/lib/api";
 import ChatHeader from "./ChatHeader";
 import MessageList from "./MessageList";
 import ToolBar from "./ToolBar";
@@ -52,7 +53,7 @@ export default function ChatPage({ embedded = false, onClose }: { embedded?: boo
     if (stored) {
       setSessionId(stored);
     } else {
-      fetch("/session")
+      fetch(`${API_BASE}/session`)
         .then((r) => r.json())
         .then((data: { session_id: string }) => {
           setSessionId(data.session_id);

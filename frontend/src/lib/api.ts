@@ -1,9 +1,11 @@
 import type { Appointment, SettingsPayload, ClinicInfo, ClinicHours, ServicesConfig } from "@/types";
 
+export const API_BASE = process.env.NEXT_PUBLIC_BACKEND_URL ?? "";
+
 type AuthHeaders = Record<string, string>;
 
 export async function fetchAppointments(authHeaders: AuthHeaders): Promise<Appointment[]> {
-  const res = await fetch("/api/appointments", { headers: authHeaders });
+  const res = await fetch(`${API_BASE}/api/appointments`, { headers: authHeaders });
   if (!res.ok) {
     const err = new Error("fetch appointments failed") as Error & { status: number };
     err.status = res.status;
@@ -17,7 +19,7 @@ export async function cancelAppointment(
   reason: string,
   authHeaders: AuthHeaders,
 ): Promise<void> {
-  const res = await fetch(`/api/appointments/${id}/cancel`, {
+  const res = await fetch(`${API_BASE}/api/appointments/${id}/cancel`, {
     method: "POST",
     headers: { "Content-Type": "application/json", ...authHeaders },
     body: JSON.stringify({ reason }),
@@ -26,7 +28,7 @@ export async function cancelAppointment(
 }
 
 export async function fetchSettings(authHeaders: AuthHeaders): Promise<SettingsPayload> {
-  const res = await fetch("/api/settings", { headers: authHeaders });
+  const res = await fetch(`${API_BASE}/api/settings`, { headers: authHeaders });
   if (!res.ok) {
     const err = new Error("fetch settings failed") as Error & { status: number };
     err.status = res.status;
@@ -39,7 +41,7 @@ export async function saveSettings(
   payload: { info?: ClinicInfo; hours?: ClinicHours; services?: ServicesConfig },
   authHeaders: AuthHeaders,
 ): Promise<void> {
-  const res = await fetch("/api/settings", {
+  const res = await fetch(`${API_BASE}/api/settings`, {
     method: "POST",
     headers: { "Content-Type": "application/json", ...authHeaders },
     body: JSON.stringify(payload),
@@ -54,7 +56,7 @@ export async function changePassword(
   confirmPassword: string,
 ): Promise<void> {
   const tempAuth = "Basic " + btoa(storedUser + ":" + currentPass);
-  const res = await fetch("/api/admin/change-password", {
+  const res = await fetch(`${API_BASE}/api/admin/change-password`, {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: tempAuth },
     body: JSON.stringify({ new_password: newPassword, confirm_password: confirmPassword }),

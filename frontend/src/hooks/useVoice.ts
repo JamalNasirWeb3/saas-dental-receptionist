@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback } from "react";
+import { API_BASE } from "@/lib/api";
 
 export function useVoice(lang: string, onTranscribed: (text: string) => void) {
   const [isListening, setIsListening] = useState(false);
@@ -47,7 +48,7 @@ export function useVoice(lang: string, onTranscribed: (text: string) => void) {
           const form = new FormData();
           form.append("audio", blob, "recording.webm");
           form.append("language", langRef.current);
-          const res = await fetch("/transcribe", { method: "POST", body: form });
+          const res = await fetch(`${API_BASE}/transcribe`, { method: "POST", body: form });
           if (!res.ok) throw new Error(`HTTP ${res.status}`);
           const { text } = (await res.json()) as { text: string };
           setVoiceStatus("");

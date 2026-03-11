@@ -2,6 +2,7 @@
 
 import { useState, useRef, useCallback } from "react";
 import type { ChatMessage, SSEEvent } from "@/types";
+import { API_BASE } from "@/lib/api";
 
 const WELCOME: ChatMessage = {
   id: "welcome",
@@ -47,7 +48,7 @@ export function useSSEChat() {
       setMessages((prev) => [...prev, userMsg]);
 
       try {
-        const res = await fetch("/chat", {
+        const res = await fetch(`${API_BASE}/chat`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ session_id: sessionId, message: text }),
