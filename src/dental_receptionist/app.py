@@ -39,7 +39,7 @@ agent = ReceptionistAgent()
 
 openai_client = AsyncOpenAI()  # reads OPENAI_API_KEY from env
 
-STATIC_DIR = Path(__file__).parent.parent.parent / "static"
+STATIC_DIR = Path(os.getenv("STATIC_DIR", "static"))
 
 
 @asynccontextmanager

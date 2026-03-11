@@ -1,1 +1,1 @@
-web: uvicorn dental_receptionist.app:app --host 0.0.0.0 --port ${PORT:-8000}
+web: uv run uvicorn dental_receptionist.app:app --host 0.0.0.0 --port ${PORT:-8000}
